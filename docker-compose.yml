@@ -1,0 +1,54 @@
+version: '3.6'
+
+networks:
+  gitlab:
+    name: gitlab-network
+
+services:
+  gitlab:
+    image: "gitlab/gitlab-ce:latest"
+    restart: always
+    hostname: "gitlab.localhost"
+    environment:
+      GITLAB_OMNIBUS_CONFIG: |
+        external_url 'http://gitlab.localhost:8888'
+        mattermost_external_url 'http://mattermost.localhost:8888'
+        pages_external_url 'http://pages.localhost:8888/'
+        gitlab_pages['inplace_chroot'] = true
+        gitlab_rails['initial_root_password'] = "password"
+        gitlab_rails['initial_shared_runners_registration_token'] = "secretToken"
+        gitlab_rails['smtp_enable'] = true
+        gitlab_rails['smtp_address'] = "mailhog"
+        gitlab_rails['smtp_port'] = 1025
+        gitlab_rails['smtp_user_name'] = "test"
+        gitlab_rails['smtp_password'] = "test"
+        gitlab_rails['smtp_domain'] = "gitlab.localhost"
+        gitlab_rails['smtp_authentication'] = "login"
+        gitlab_rails['smtp_enable_starttls_auto'] = false
+        gitlab_rails['smtp_tls'] = false
+    ports:
+    - "8888:8888"
+    - "443:443"
+    - "22:22"
+    volumes:
+    - "./gitlab/config:/etc/gitlab"
+    - "./gitlab/logs:/var/log/gitlab"
+    - "./gitlab/data:/var/opt"
+    networks:
+      gitlab:
+        aliases:
+        - gitlab.localhost
+  runner:
+    image: "gitlab/gitlab-runner:latest"
+    restart: always
+    volumes:
+    - "/var/run/docker.sock:/var/run/docker.sock"
+    - "./gitlab-runner:/etc/gitlab-runner"
+    networks:
+      gitlab:
+  mailhog:
+    image: "mailhog/mailhog"
+    ports:
+    - "8025:8025"
+    networks:
+      gitlab:
